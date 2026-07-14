@@ -1,0 +1,2 @@
+data/raw/*.csvdata/**/*.csv
+data/**/*.csv
