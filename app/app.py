@@ -212,9 +212,10 @@ section = st.sidebar.radio(
     "Section",
     [
         "Executive Overview",
-        "Learning Pathways",
+        "Training Explorer",
+        "Model Results",
         "Job Satisfaction",
-        "Career Mobility Model",
+        #"Career Mobility Model",
         "Pathway Deep Dive"
     ]
 )
@@ -238,10 +239,7 @@ if section == "Executive Overview":
 
     st.info(
         """
-    Job satisfaction was clearly lower among respondents who had considered or transitioned careers,
-    but job satisfaction itself was difficult to predict from broad survey variables. Career change
-    consideration showed more useful group-level signal, especially when combined with career stage,
-    compensation, AI concern, learning pathways, and workplace context.
+    Technical training is most valuable when it connects to what comes next: mission-relevant work, role clarity, and a visible path to keep growing. This dashboard explores developer workforce patterns that can help leaders think about training as part of a broader talent-development system.
         """
     )
 
@@ -251,9 +249,9 @@ if section == "Executive Overview":
     """
     Use the navigation panel on the left to move through the analysis:
 
-    - **Learning Pathways** shows how respondents reported learning to code.
+    - **Training Explorer** shows how respondents reported learning to code.
     - **Job Satisfaction** compares satisfaction patterns across career mobility groups.
-    - **Career Mobility Model** summarizes model performance, probability bands, and sensitivity checks.
+    - **Model Results** summarizes model performance, probability bands, and sensitivity checks.
     - **Pathway Deep Dive** explores structured, self-directed, AI-assisted, and workplace learning pathways.
     """
 )
@@ -267,12 +265,123 @@ if section == "Executive Overview":
     
 
 
-elif section == "Learning Pathways":
-    st.markdown("### Learning Pathways")
+elif section == "Training Explorer":
+    st.markdown("### Training Explorer")
     st.write(
         """
         This section explores how respondents reported learning to code.
         Respondents could select multiple pathways, so counts overlap.
+        """
+    )
+
+    selected_pathway = st.selectbox(
+        "Select a learning pathway",
+        list(LEARNING_COLS.keys())
+    )
+
+    selected_col = LEARNING_COLS[selected_pathway]
+
+    pathway_df = df[df[selected_col] == 1].copy()
+    comparison_df = df[df[selected_col] == 0].copy()
+
+    pathway_count = len(pathway_df)
+    pathway_jobsat = pathway_df["JobSat"].mean()
+    comparison_jobsat = comparison_df["JobSat"].mean()
+
+    pathway_career_rate = pathway_df["career_change_considered"].mean() * 100
+    comparison_career_rate = comparison_df["career_change_considered"].mean() * 100
+
+    overall_career_rate = df["career_change_considered"].mean() * 100
+    overall_jobsat = df["JobSat"].mean()
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
+        "Respondents using pathway",
+        f"{pathway_count:,}"
+    )
+
+    col2.metric(
+        "Avg JobSat",
+        f"{pathway_jobsat:.2f}",
+        delta=f"{pathway_jobsat - overall_jobsat:+.2f} vs overall"
+    )
+
+    col3.metric(
+        "Career-change considered",
+        f"{pathway_career_rate:.1f}%",
+        delta=f"{pathway_career_rate - overall_career_rate:+.1f} pts vs overall"
+    )
+
+    compare_df = pd.DataFrame({
+        "Group": [
+            f"Used {selected_pathway}",
+            f"Did not use {selected_pathway}"
+        ],
+        "Average JobSat": [
+            pathway_jobsat,
+            comparison_jobsat
+        ],
+        "Career-change consideration rate": [
+            pathway_career_rate,
+            comparison_career_rate
+        ]
+    })
+
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        fig = go.Figure(
+            go.Bar(
+                x=compare_df["Group"],
+                y=compare_df["Average JobSat"],
+                text=compare_df["Average JobSat"].round(2),
+                textposition="outside",
+                marker_color="#2F806E"
+            )
+        )
+
+        fig.update_layout(
+            title=f"Average JobSat: {selected_pathway}",
+            xaxis_title="",
+            yaxis_title="Average JobSat",
+            height=420,
+            plot_bgcolor="#FFFFFF",
+            paper_bgcolor="#FFFFFF"
+        )
+
+        fig.update_yaxes(range=[0, 10])
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col_right:
+        fig = go.Figure(
+            go.Bar(
+                x=compare_df["Group"],
+                y=compare_df["Career-change consideration rate"],
+                text=compare_df["Career-change consideration rate"].round(1),
+                textposition="outside",
+                marker_color="#F2A93B"
+            )
+        )
+
+        fig.update_layout(
+            title=f"Career-Change Consideration: {selected_pathway}",
+            xaxis_title="",
+            yaxis_title="Career-change consideration rate (%)",
+            height=420,
+            plot_bgcolor="#FFFFFF",
+            paper_bgcolor="#FFFFFF"
+        )
+
+        fig.update_yaxes(range=[0, 80])
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.caption(
+        """
+        Respondents could select multiple learning pathways. These comparisons show observed survey
+        patterns for respondents who reported the selected pathway, not the causal effect of that pathway.
         """
     )
 
@@ -422,8 +531,117 @@ elif section == "Job Satisfaction":
 
     
 
-elif section == "Career Mobility Model":
-    st.markdown("### Career Mobility Model")
+elif section == "Model Results":
+    st.markdown("### Model Results")
+    
+    st.write(
+        """
+        This section summarizes the saved model results from the analysis. The model is not
+        intended to predict individual behavior. It is used to evaluate whether career-change
+        consideration shows a detectable group-level pattern.
+        """
+    )
+
+    # -----------------------------
+    # Probability bands
+    # -----------------------------
+    st.markdown("### Observed Career-Change Rate by Model Score Band")
+
+    band_df = pd.DataFrame({
+        "Model score band": ["Lower", "Middle", "Higher"],
+        "Observed career-change rate": [30.5, 52.5, 66.0],
+        "Respondents": [354, 5176, 1576]
+    })
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Lower band", "30.5%")
+    col1.caption("354 respondents")
+
+    col2.metric("Middle band", "52.5%")
+    col2.caption("5,176 respondents")
+
+    col3.metric("Higher band", "66.0%")
+    col3.caption("1,576 respondents")
+
+    fig = go.Figure(
+        go.Bar(
+            x=band_df["Model score band"],
+            y=band_df["Observed career-change rate"],
+            text=band_df["Observed career-change rate"],
+            textposition="outside",
+            marker_color=["#1E2E4F", "#2F806E", "#F2A93B"]
+        )
+    )
+
+    fig.update_layout(
+        title="Observed Career-Change Rate by Model Score Band",
+        xaxis_title="Model score band",
+        yaxis_title="Observed career-change consideration rate (%)",
+        height=450,
+        plot_bgcolor="#FFFFFF",
+        paper_bgcolor="#FFFFFF"
+    )
+
+    fig.update_yaxes(range=[0, 80])
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.info(
+        """
+        The model created lower, middle, and higher score bands. The chart shows the actual
+        observed career-change consideration rate inside each band. The rates rise across the
+        groups, which shows useful group-level signal, not individual prediction.
+        """
+    )
+
+    # -----------------------------
+    # Sensitivity checks
+    # -----------------------------
+    st.markdown("### Sensitivity Check")
+
+    sensitivity_df = pd.DataFrame({
+        "Model version": [
+            "Full Model",
+            "No Salary",
+            "Development-Focused",
+            "No Salary/Experience/AIThreat"
+        ],
+        "ROC-AUC": [0.612, 0.607, 0.590, 0.564]
+    })
+
+    fig = go.Figure(
+        go.Bar(
+            x=sensitivity_df["Model version"],
+            y=sensitivity_df["ROC-AUC"],
+            text=sensitivity_df["ROC-AUC"].round(3),
+            textposition="outside",
+            marker_color="#2F806E"
+        )
+    )
+
+    fig.update_layout(
+        title="Model Strength After Removing Key Feature Groups",
+        xaxis_title="Model version",
+        yaxis_title="ROC-AUC",
+        height=430,
+        plot_bgcolor="#FFFFFF",
+        paper_bgcolor="#FFFFFF"
+    )
+
+    fig.update_yaxes(range=[0.50, 0.65])
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.caption(
+        """
+        ROC-AUC near 0.61 indicates modest model strength. The purpose is workforce pattern
+        recognition, not confident individual prediction.
+        """
+    )
+    
+    
+    
     st.write(
         """
         This page summarizes the classification model used to predict whether a respondent
