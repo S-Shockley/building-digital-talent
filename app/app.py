@@ -20,7 +20,7 @@ LEARNING_COLS = {
 
 st.set_page_config(
     page_title="Building Digital Talent",
-    page_icon="📊",
+    page_icon="🧭",
     layout="wide"
 )
 
@@ -595,61 +595,7 @@ elif section == "Model Results":
         """
     )
 
-    # -----------------------------
-    # Sensitivity checks
-    # -----------------------------
-    st.markdown("### Sensitivity Check")
-
-    sensitivity_df = pd.DataFrame({
-        "Model version": [
-            "Full Model",
-            "No Salary",
-            "Development-Focused",
-            "No Salary/Experience/AIThreat"
-        ],
-        "ROC-AUC": [0.612, 0.607, 0.590, 0.564]
-    })
-
-    fig = go.Figure(
-        go.Bar(
-            x=sensitivity_df["Model version"],
-            y=sensitivity_df["ROC-AUC"],
-            text=sensitivity_df["ROC-AUC"].round(3),
-            textposition="outside",
-            marker_color="#2F806E"
-        )
-    )
-
-    fig.update_layout(
-        title="Model Strength After Removing Key Feature Groups",
-        xaxis_title="Model version",
-        yaxis_title="ROC-AUC",
-        height=430,
-        plot_bgcolor="#FFFFFF",
-        paper_bgcolor="#FFFFFF"
-    )
-
-    fig.update_yaxes(range=[0.50, 0.65])
-
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.caption(
-        """
-        ROC-AUC near 0.61 indicates modest model strength. The purpose is workforce pattern
-        recognition, not confident individual prediction.
-        """
-    )
-    
-    
-    
-    st.write(
-        """
-        This page summarizes the classification model used to predict whether a respondent
-        had considered or transitioned into a new career or industry. The model should not
-        be interpreted as predicting individual career behavior. Instead, it is useful for
-        identifying group-level workforce patterns.
-        """
-    )
+   
 
     # ------------------------------------------------------------
     # Model performance table
@@ -689,58 +635,7 @@ elif section == "Model Results":
         """
     )
 
-    # ------------------------------------------------------------
-    # Probability bands
-    # ------------------------------------------------------------
-    st.markdown("### Probability Bands")
-
-    st.write(
-        """
-        To make the model easier to interpret, predicted probabilities were grouped
-        into lower, middle, and higher probability bands. The chart below shows the
-        actual observed career change consideration rate within each band.
-        """
-    )
-
-    band_df = pd.DataFrame({
-        "Probability Band": ["Lower", "Middle", "Higher"],
-        "Observed Career Change Rate": [30.5, 52.5, 66.0],
-        "Respondents": [354, 5176, 1576]
-    })
-
-    col1, col2, col3 = st.columns(3)
-
-    col1.metric("Lower band", "30.5%")
-    col2.metric("Middle band", "52.5%")
-    col3.metric("Higher band", "66.0%")
-
-    fig = go.Figure(
-        go.Bar(
-            x=band_df["Probability Band"],
-            y=band_df["Observed Career Change Rate"],
-            text=band_df["Observed Career Change Rate"],
-            textposition="outside"
-        )
-    )
-
-    fig.update_layout(
-        title="Observed Career Change Consideration by Probability Band",
-        xaxis_title="Predicted probability band",
-        yaxis_title="Observed career change consideration rate (%)",
-        height=450
-    )
-
-    fig.update_yaxes(range=[0, 100])
-
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.success(
-        """
-        This is one of the strongest dashboard findings: the model separated respondents
-        into groups with meaningfully different observed career change consideration rates.
-        """
-    )
-
+   
     # ------------------------------------------------------------
     # Sensitivity checks
     # ------------------------------------------------------------
